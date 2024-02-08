@@ -1,0 +1,21 @@
+2024-02-08 18:06:19,042 INFO    : gaussian_noise
+2024-02-08 18:06:19,194 INFO    : shot_noise
+2024-02-08 18:06:19,344 INFO    : impulse_noise
+2024-02-08 18:06:19,494 INFO    : defocus_blur
+2024-02-08 18:06:19,643 INFO    : glass_blur
+2024-02-08 18:06:19,793 INFO    : motion_blur
+2024-02-08 18:06:19,943 INFO    : zoom_blur
+2024-02-08 18:06:20,093 INFO    : snow
+2024-02-08 18:06:20,249 INFO    : frost
+2024-02-08 18:06:20,399 INFO    : fog
+2024-02-08 18:06:20,549 INFO    : brightness
+2024-02-08 18:06:20,700 INFO    : contrast
+2024-02-08 18:06:20,850 INFO    : elastic_transform
+2024-02-08 18:06:21,003 INFO    : pixelate
+2024-02-08 18:06:21,153 INFO    : jpeg_compression
+2024-02-08 18:06:21,307 INFO    : length of mixed dataset us 750000
+2024-02-08 18:06:26,832 INFO    : Namespace(data='/home/yxue/datasets/ILSVRC', data_corruption='/home/yxue/datasets/ImageNet-C', output='./exps', seed=2021, gpu=0, debug=False, workers=16, test_batch_size=50, if_shuffle=True, level=5, corruption='mix_shifts', fisher_size=2000, fisher_alpha=2000.0, e_margin=2.763102111592855, d_margin=0.05, method='sar', model='resnet50_bn_torch', exp_type='mix_shifts', sar_margin_e0=2.763102111592855, imbalance_ratio=500000, logger_name='2024-02-08-18-06-19-sar-resnet50_bn_torch-level5-seed2021.txt', print_freq=50, lr=0.00025)
+2024-02-08 18:06:26,834 INFO    : ['bn1.weight', 'bn1.bias', 'layer1.0.bn1.weight', 'layer1.0.bn1.bias', 'layer1.0.bn2.weight', 'layer1.0.bn2.bias', 'layer1.0.bn3.weight', 'layer1.0.bn3.bias', 'layer1.0.downsample.1.weight', 'layer1.0.downsample.1.bias', 'layer1.1.bn1.weight', 'layer1.1.bn1.bias', 'layer1.1.bn2.weight', 'layer1.1.bn2.bias', 'layer1.1.bn3.weight', 'layer1.1.bn3.bias', 'layer1.2.bn1.weight', 'layer1.2.bn1.bias', 'layer1.2.bn2.weight', 'layer1.2.bn2.bias', 'layer1.2.bn3.weight', 'layer1.2.bn3.bias', 'layer2.0.bn1.weight', 'layer2.0.bn1.bias', 'layer2.0.bn2.weight', 'layer2.0.bn2.bias', 'layer2.0.bn3.weight', 'layer2.0.bn3.bias', 'layer2.0.downsample.1.weight', 'layer2.0.downsample.1.bias', 'layer2.1.bn1.weight', 'layer2.1.bn1.bias', 'layer2.1.bn2.weight', 'layer2.1.bn2.bias', 'layer2.1.bn3.weight', 'layer2.1.bn3.bias', 'layer2.2.bn1.weight', 'layer2.2.bn1.bias', 'layer2.2.bn2.weight', 'layer2.2.bn2.bias', 'layer2.2.bn3.weight', 'layer2.2.bn3.bias', 'layer2.3.bn1.weight', 'layer2.3.bn1.bias', 'layer2.3.bn2.weight', 'layer2.3.bn2.bias', 'layer2.3.bn3.weight', 'layer2.3.bn3.bias', 'layer3.0.bn1.weight', 'layer3.0.bn1.bias', 'layer3.0.bn2.weight', 'layer3.0.bn2.bias', 'layer3.0.bn3.weight', 'layer3.0.bn3.bias', 'layer3.0.downsample.1.weight', 'layer3.0.downsample.1.bias', 'layer3.1.bn1.weight', 'layer3.1.bn1.bias', 'layer3.1.bn2.weight', 'layer3.1.bn2.bias', 'layer3.1.bn3.weight', 'layer3.1.bn3.bias', 'layer3.2.bn1.weight', 'layer3.2.bn1.bias', 'layer3.2.bn2.weight', 'layer3.2.bn2.bias', 'layer3.2.bn3.weight', 'layer3.2.bn3.bias', 'layer3.3.bn1.weight', 'layer3.3.bn1.bias', 'layer3.3.bn2.weight', 'layer3.3.bn2.bias', 'layer3.3.bn3.weight', 'layer3.3.bn3.bias', 'layer3.4.bn1.weight', 'layer3.4.bn1.bias', 'layer3.4.bn2.weight', 'layer3.4.bn2.bias', 'layer3.4.bn3.weight', 'layer3.4.bn3.bias', 'layer3.5.bn1.weight', 'layer3.5.bn1.bias', 'layer3.5.bn2.weight', 'layer3.5.bn2.bias', 'layer3.5.bn3.weight', 'layer3.5.bn3.bias']
+2024-02-08 19:00:22,969 INFO    : Result under mix_shifts. The adaptation accuracy of SAR is top1: 16.83973 and top5: 30.02813
+2024-02-08 19:00:22,969 INFO    : acc1s are [16.839733123779297]
+2024-02-08 19:00:22,970 INFO    : acc5s are [30.028133392333984]

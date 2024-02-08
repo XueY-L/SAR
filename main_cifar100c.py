@@ -2,7 +2,7 @@
 Copyright to SAR Authors, ICLR 2023 Oral (notable-top-5%)
 built upon on Tent and EATA code.
 
-CUDA_VISIBLE_DEVICES=1 python3 main.py --exp_type normal --model resnet50_bn_torch
+CUDA_VISIBLE_DEVICES=1 python3 main_cifar100c.py --exp_type normal --model resnext  --test_batch_size 200
 """
 from logging import debug
 import os
@@ -31,45 +31,9 @@ import timm
 
 import models.Res as Resnet
 
-
-
-def validate(val_loader, model, criterion, args, mode='eval'):
-    batch_time = AverageMeter('Time', ':6.3f')
-    top1 = AverageMeter('Acc@1', ':6.2f')
-    top5 = AverageMeter('Acc@5', ':6.2f')
-    progress = ProgressMeter(
-        len(val_loader),
-        [batch_time, top1, top5],
-        prefix='Test: ')
-    model.eval()
-
-    with torch.no_grad():
-        end = time.time()
-        for i, dl in enumerate(val_loader):
-            images, target = dl[0], dl[1]
-            if args.gpu is not None:
-                images = images.cuda()
-            if torch.cuda.is_available():
-                target = target.cuda()
-            # compute output
-            output = model(images)
-            # _, targets = output.max(1)
-            # measure accuracy and record loss
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
-
-            top1.update(acc1[0], images.size(0))
-            top5.update(acc5[0], images.size(0))
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if i % args.print_freq == 0:
-                progress.display(i)
-            if i > 10 and args.debug:
-                break
-    return top1.avg, top5.avg
-
+from robustbench.data import load_imagenetc, load_cifar100c
+from robustbench.utils import load_model
+from robustbench.model_zoo.enums import ThreatModel
 
 
 def get_args():
@@ -88,7 +52,7 @@ def get_args():
     # dataloader
     parser.add_argument('--workers', default=16, type=int, help='number of data loading workers (default: 4)')
     parser.add_argument('--test_batch_size', default=50, type=int, help='mini-batch size for testing, before default value is 4')
-    parser.add_argument('--if_shuffle', default=True, type=bool, help='if shuffle the test set.')
+    parser.add_argument('--if_shuffle', default=False, type=bool, help='if shuffle the test set.')
 
     # corruption settings
     parser.add_argument('--level', default=5, type=int, help='corruption level of test(val) set.')
@@ -165,7 +129,8 @@ if __name__ == '__main__':
     for corrupt in common_corruptions:
         args.corruption = corrupt
         bs = args.test_batch_size
-        args.print_freq = 50000 // 20 // bs
+        # args.print_freq = 50000 // 20 // bs
+        args.print_freq = 10
 
         if args.method in ['tent', 'eata', 'sar', 'no_adapt']:
             if args.corruption != 'mix_shifts':
@@ -194,10 +159,13 @@ if __name__ == '__main__':
                 net = timm.create_model('vit_base_patch16_224', pretrained=True)
                 args.lr = (0.001 / 64) * bs
             elif args.model == "resnet50_bn_torch":
-                net = Resnet.__dict__['resnet50'](pretrained=True)
-                # init = torch.load("./pretrained_models/resnet50-19c8e357.pth")
-                # net.load_state_dict(init)
+                # net = Resnet.__dict__['resnet50'](pretrained=True)
+                net = load_model('Standard_R50', './ckpt', 'imagenet', ThreatModel.corruptions).cuda()
+                net.load_state_dict(torch.load('/home/yxue/model_fusion_tta/imagenet/checkpoint/ckpt_[\'jpeg_compression\']_[1].pt')['model'])
                 args.lr = (0.00025 / 64) * bs * 2 if bs < 32 else 0.00025
+            elif args.model == 'resnext':
+                net = load_model('Hendrycks2020AugMix_ResNeXt', './ckpt', 'cifar100', ThreatModel.corruptions).cuda()
+                net.load_state_dict(torch.load('/home/yxue/model_fusion_tta/cifar/checkpoint/ckpt_cifar100_[\'jpeg_compression\']_[1].pt')['model'])
             else:
                 assert False, NotImplementedError
             net = net.cuda()
@@ -289,47 +257,26 @@ if __name__ == '__main__':
             params, param_names = sar.collect_params(net)
             logger.info(param_names)
 
+            args.lr = 0.00025
             base_optimizer = torch.optim.SGD
             optimizer = SAM(params, base_optimizer, lr=args.lr, momentum=0.9)
             adapt_model = sar.SAR(net, optimizer, margin_e0=args.sar_margin_e0)
 
-            batch_time = AverageMeter('Time', ':6.3f')
-            top1 = AverageMeter('Acc@1', ':6.2f')
-            top5 = AverageMeter('Acc@5', ':6.2f')
-            progress = ProgressMeter(
-                len(val_loader),
-                [batch_time, top1, top5],
-                prefix='Test: ')
-            end = time.time()
-            for i, dl in enumerate(val_loader):
-                images, target = dl[0], dl[1]
-                if args.gpu is not None:
-                    images = images.cuda()
-                if torch.cuda.is_available():
-                    target = target.cuda()
-                output = adapt_model(images)
-                acc1, acc5 = accuracy(output, target, topk=(1, 5))
+            x_test, y_test = load_cifar100c(10000, 5, '/home/yxue/datasets', False, [corrupt])
+            x_test, y_test = x_test.cuda(), y_test.cuda()
 
-                top1.update(acc1[0], images.size(0))
-                top5.update(acc5[0], images.size(0))
+            acc = 0.
+            n_batches = math.ceil(x_test.shape[0] / args.test_batch_size)
+            with torch.no_grad():
+                for counter in range(n_batches):
+                    x_curr = x_test[counter * args.test_batch_size:(counter + 1) *
+                            args.test_batch_size].cuda()
+                    y_curr = y_test[counter * args.test_batch_size:(counter + 1) *
+                            args.test_batch_size].cuda()
 
-                # measure elapsed time
-                batch_time.update(time.time() - end)
-                end = time.time()
-
-                if i % args.print_freq == 0:
-                    progress.display(i)
-
-            acc1 = top1.avg
-            acc5 = top5.avg
-
-            logger.info(f"Result under {args.corruption}. The adaptation accuracy of SAR is top1: {acc1:.5f} and top5: {acc5:.5f}")
-
-            acc1s.append(top1.avg.item())
-            acc5s.append(top5.avg.item())
-
-            logger.info(f"acc1s are {acc1s}")
-            logger.info(f"acc5s are {acc5s}")
+                    output = adapt_model(x_curr)
+                    acc += (output.max(1)[1] == y_curr).float().sum()
+            logger.info(f"{corrupt} accuracy: {acc.item() / x_test.shape[0]:.4}")
 
         else:
             assert False, NotImplementedError
