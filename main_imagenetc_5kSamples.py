@@ -2,7 +2,7 @@
 Copyright to SAR Authors, ICLR 2023 Oral (notable-top-5%)
 built upon on Tent and EATA code.
 
-CUDA_VISIBLE_DEVICES=0 python3 main_imagenetc_5kSamples.py --exp_type normal --model resnet50_bn_torch
+CUDA_VISIBLE_DEVICES=3 python3 main_imagenetc_5kSamples.py --exp_type normal --model resnet50_bn_torch
 """
 from logging import debug
 import os
@@ -177,7 +177,7 @@ if __name__ == '__main__':
                 # val_dataset, val_loader = prepare_test_data(args)
                 # val_dataset.switch_mode(True, False)
 
-                val_dataset, val_loader = load_imagenetc(args.test_batch_size, 5, '/home/yxue/datasets', args.if_shuffle, [corrupt])
+                val_dataset, val_loader = load_imagenetc(args.test_batch_size, args.level, '/home/yxue/datasets', args.if_shuffle, [corrupt])
         else:
             assert False, NotImplementedError
         # construt new dataset with online imbalanced label distribution shifts, see Section 4.3 for details

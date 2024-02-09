@@ -16,7 +16,7 @@ from robustbench.loaders import CustomImageFolder, make_custom_dataset
 
 
 PREPROCESSINGS = {
-    'Res256Crop224': transforms.Compose([# transforms.Resize(256),
+    'Res256Crop224': transforms.Compose([transforms.Resize(256),
                                          transforms.CenterCrop(224),
                                          transforms.ToTensor()]),
     'Crop288': transforms.Compose([transforms.CenterCrop(288),
