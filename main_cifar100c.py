@@ -70,7 +70,7 @@ def get_args():
     parser.add_argument('--exp_type', default='label_shifts', type=str, help='normal, mix_shifts, bs1, label_shifts')
 
     # SAR parameters
-    parser.add_argument('--sar_margin_e0', default=math.log(1000)*0.40, type=float, help='the threshold for reliable minimization in SAR, Eqn. (2)')
+    parser.add_argument('--sar_margin_e0', default=math.log(100)*0.40, type=float, help='the threshold for reliable minimization in SAR, Eqn. (2)')
     parser.add_argument('--imbalance_ratio', default=500000, type=float, help='imbalance ratio for label shift exps, selected from [1, 1000, 2000, 3000, 4000, 5000, 500000], 1  denotes totally uniform and 500000 denotes (almost the same to Pure Class Order). See Section 4.3 for details;')
 
     return parser.parse_args()
@@ -159,13 +159,11 @@ if __name__ == '__main__':
                 net = timm.create_model('vit_base_patch16_224', pretrained=True)
                 args.lr = (0.001 / 64) * bs
             elif args.model == "resnet50_bn_torch":
-                # net = Resnet.__dict__['resnet50'](pretrained=True)
-                net = load_model('Standard_R50', './ckpt', 'imagenet', ThreatModel.corruptions).cuda()
-                net.load_state_dict(torch.load('/home/yxue/model_fusion_tta/imagenet/checkpoint/ckpt_[\'jpeg_compression\']_[1].pt')['model'])
+                net = Resnet.__dicst__['resnet50'](pretrained=True)
                 args.lr = (0.00025 / 64) * bs * 2 if bs < 32 else 0.00025
             elif args.model == 'resnext':
                 net = load_model('Hendrycks2020AugMix_ResNeXt', './ckpt', 'cifar100', ThreatModel.corruptions).cuda()
-                net.load_state_dict(torch.load('/home/yxue/model_fusion_tta/cifar/checkpoint/ckpt_cifar100_[\'jpeg_compression\']_[1].pt')['model'])
+                net.load_state_dict(torch.load('/home/yxue/model_fusion_tta/cifar/checkpoint/ckpt_cifar100_[\'gaussian_noise\']_[1].pt')['model'])
             else:
                 assert False, NotImplementedError
             net = net.cuda()
@@ -178,81 +176,7 @@ if __name__ == '__main__':
 
         logger.info(args)
 
-        if args.method == "tent":
-            net = tent.configure_model(net)
-            params, param_names = tent.collect_params(net)
-            logger.info(param_names)
-            optimizer = torch.optim.SGD(params, args.lr, momentum=0.9) 
-            tented_model = tent.Tent(net, optimizer)
-
-            top1, top5 = validate(val_loader, tented_model, None, args, mode='eval')
-            logger.info(f"Result under {args.corruption}. The adapttion accuracy of Tent is top1 {top1:.5f} and top5: {top5:.5f}")
-
-            acc1s.append(top1.item())
-            acc5s.append(top5.item())
-
-            logger.info(f"acc1s are {acc1s}")
-            logger.info(f"acc5s are {acc5s}")
-
-        elif args.method == "no_adapt":
-            tented_model = net
-            top1, top5 = validate(val_loader, tented_model, None, args, mode='eval')
-            logger.info(f"Result under {args.corruption}. Original Accuracy (no adapt) is top1: {top1:.5f} and top5: {top5:.5f}")
-
-            acc1s.append(top1.item())
-            acc5s.append(top5.item())
-
-            logger.info(f"acc1s are {acc1s}")
-            logger.info(f"acc5s are {acc5s}")
-
-        elif args.method == "eata":
-            # compute fisher informatrix
-            args.corruption = 'original'
-            fisher_dataset, fisher_loader = prepare_test_data(args)
-            fisher_dataset.set_dataset_size(args.fisher_size)
-            fisher_dataset.switch_mode(True, False)
-
-            net = eata.configure_model(net)
-            params, param_names = eata.collect_params(net)
-            # fishers = None
-            ewc_optimizer = torch.optim.SGD(params, 0.001)
-            fishers = {}
-            train_loss_fn = nn.CrossEntropyLoss().cuda()
-            for iter_, (images, targets) in enumerate(fisher_loader, start=1):      
-                if args.gpu is not None:
-                    images = images.cuda(args.gpu, non_blocking=True)
-                if torch.cuda.is_available():
-                    targets = targets.cuda(args.gpu, non_blocking=True)
-                outputs = net(images)
-                _, targets = outputs.max(1)
-                loss = train_loss_fn(outputs, targets)
-                loss.backward()
-                for name, param in net.named_parameters():
-                    if param.grad is not None:
-                        if iter_ > 1:
-                            fisher = param.grad.data.clone().detach() ** 2 + fishers[name][0]
-                        else:
-                            fisher = param.grad.data.clone().detach() ** 2
-                        if iter_ == len(fisher_loader):
-                            fisher = fisher / iter_
-                        fishers.update({name: [fisher, param.data.clone().detach()]})
-                ewc_optimizer.zero_grad()
-            logger.info("compute fisher matrices finished")
-            del ewc_optimizer
-
-            optimizer = torch.optim.SGD(params, args.lr, momentum=0.9)
-            adapt_model = eata.EATA(net, optimizer, fishers, args.fisher_alpha, e_margin=args.e_margin, d_margin=args.d_margin)
-
-            top1, top5 = validate(val_loader, adapt_model, None, args, mode='eval')
-            logger.info(f"Result under {args.corruption}. After EATA Adapt: Accuracy: top1: {top1:.5f} and top5: {top5:.5f}")
-
-            acc1s.append(top1.item())
-            acc5s.append(top5.item())
-
-            logger.info(f"acc1s are {acc1s}")
-            logger.info(f"acc5s are {acc5s}")
-
-        elif args.method in ['sar']:
+        if args.method in ['sar']:
             net = sar.configure_model(net)
             params, param_names = sar.collect_params(net)
             logger.info(param_names)
