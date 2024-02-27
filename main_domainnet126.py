@@ -2,7 +2,7 @@
 Copyright to SAR Authors, ICLR 2023 Oral (notable-top-5%)
 built upon on Tent and EATA code.
 
-CUDA_VISIBLE_DEVICES=0 python3 main_domainnet126.py --exp_type normal
+CUDA_VISIBLE_DEVICES=2 python3 main_domainnet126.py --exp_type normal
 """
 from collections import OrderedDict
 from logging import debug
@@ -137,8 +137,8 @@ if __name__ == '__main__':
     logger = get_logger(name="project", output_directory=args.output, log_name=args.logger_name, debug=False) 
         
     
-    source_domain = 'painting'
-    common_corruptions = ['real', 'sketch']
+    source_domain = 'real'
+    common_corruptions = ['clipart', 'painting']
 
     if args.exp_type == 'bs1':
         args.test_batch_size = 1
