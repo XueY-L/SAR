@@ -20,7 +20,7 @@ from utils.utils import get_logger
 from dataset.selectedRotateImageFolder import prepare_test_data
 from utils.cli_utils import *
 
-import torch    
+import torch
 import torch.nn.functional as F
 
 import tent
@@ -41,8 +41,8 @@ def get_args():
     parser = argparse.ArgumentParser(description='SAR exps')
 
     # path
-    parser.add_argument('--data', default='/home/yxue/datasets/ILSVRC', help='path to dataset')
-    parser.add_argument('--data_corruption', default='/home/yxue/datasets/ImageNet-C', help='path to corruption dataset')
+    parser.add_argument('--data', default='/home/yuanxue/data/ILSVRC', help='path to dataset')
+    parser.add_argument('--data_corruption', default='/home/yuanxue/data/ImageNet-C', help='path to corruption dataset')
     parser.add_argument('--output', default='./exps', help='the output directory of this experiment')
 
     parser.add_argument('--seed', default=2021, type=int, help='seed for initializing training. ')
@@ -126,29 +126,31 @@ if __name__ == '__main__':
 
     acc1s, acc5s = [], []
     ir = args.imbalance_ratio
+    t1 = time.time()
     for corrupt in common_corruptions:
         args.corruption = corrupt
         bs = args.test_batch_size
         # args.print_freq = 50000 // 20 // bs
         args.print_freq = 10
 
-        if args.method in ['tent', 'eata', 'sar', 'no_adapt']:
-            if args.corruption != 'mix_shifts':
-                val_dataset, val_loader = prepare_test_data(args)
-                val_dataset.switch_mode(True, False)
-        else:
-            assert False, NotImplementedError
-        # construt new dataset with online imbalanced label distribution shifts, see Section 4.3 for details
-        # note that this operation does not support mix-domain-shifts exps
-        if args.exp_type == 'label_shifts':
-            logger.info(f"imbalance ratio is {ir}")
-            if args.seed == 2021:
-                indices_path = './dataset/total_{}_ir_{}_class_order_shuffle_yes.npy'.format(100000, ir)
-            else:
-                indices_path = './dataset/seed{}_total_{}_ir_{}_class_order_shuffle_yes.npy'.format(args.seed, 100000, ir)
-            logger.info(f"label_shifts_indices_path is {indices_path}")
-            indices = np.load(indices_path)
-            val_dataset.set_specific_subset(indices.astype(int).tolist())
+        # 我们没用原来的代码搞数据集
+        # if args.method in ['tent', 'eata', 'sar', 'no_adapt']:
+        #     if args.corruption != 'mix_shifts':
+        #         val_dataset, val_loader = prepare_test_data(args)
+        #         val_dataset.switch_mode(True, False)
+        # else:
+        #     assert False, NotImplementedError
+        # # construt new dataset with online imbalanced label distribution shifts, see Section 4.3 for details
+        # # note that this operation does not support mix-domain-shifts exps
+        # if args.exp_type == 'label_shifts':
+        #     logger.info(f"imbalance ratio is {ir}")
+        #     if args.seed == 2021:
+        #         indices_path = './dataset/total_{}_ir_{}_class_order_shuffle_yes.npy'.format(100000, ir)
+        #     else:
+        #         indices_path = './dataset/seed{}_total_{}_ir_{}_class_order_shuffle_yes.npy'.format(args.seed, 100000, ir)
+        #     logger.info(f"label_shifts_indices_path is {indices_path}")
+        #     indices = np.load(indices_path)
+        #     val_dataset.set_specific_subset(indices.astype(int).tolist())
         
         # build model for adaptation
         if args.method in ['tent', 'eata', 'sar', 'no_adapt']:
@@ -163,7 +165,7 @@ if __name__ == '__main__':
                 args.lr = (0.00025 / 64) * bs * 2 if bs < 32 else 0.00025
             elif args.model == 'resnext':
                 net = load_model('Hendrycks2020AugMix_ResNeXt', './ckpt', 'cifar100', ThreatModel.corruptions).cuda()
-                net.load_state_dict(torch.load('/home/yxue/model_fusion_tta/cifar/checkpoint/ckpt_cifar100_[\'gaussian_noise\']_[1].pt')['model'])
+                net.load_state_dict(torch.load('./ckpt/cifar100/corruptions/ckpt_cifar100_[\'gaussian_noise\']_[1].pt')['model'])
             else:
                 assert False, NotImplementedError
             net = net.cuda()
@@ -186,7 +188,7 @@ if __name__ == '__main__':
             optimizer = SAM(params, base_optimizer, lr=args.lr, momentum=0.9)
             adapt_model = sar.SAR(net, optimizer, margin_e0=args.sar_margin_e0)
 
-            x_test, y_test = load_cifar100c(10000, 5, '/home/yxue/datasets', False, [corrupt])
+            x_test, y_test = load_cifar100c(10000, 5, '/home/yuanxue/data', False, [corrupt])
             x_test, y_test = x_test.cuda(), y_test.cuda()
 
             acc = 0.
@@ -204,3 +206,5 @@ if __name__ == '__main__':
 
         else:
             assert False, NotImplementedError
+    t2 = time.time()
+    logger.info(f"Time: {t2-t1}s")
